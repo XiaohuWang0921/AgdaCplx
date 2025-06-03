@@ -172,11 +172,11 @@ module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
     open Func ϕ renaming (to to fill; cong to fill-cong) public
 
     field
-      sec : ∀ h x → ϕ ⟨$⟩ h ⟨$⟩ (α ⟨$⟩ x) ≈ h ⟨$⟩ x
-      proj : ∀ s y → ϕ ⟨$⟩ (const ⟨$⟩ s) ⟨$⟩ y ≈ s
-      diag : ∀ hh y → ϕ ⟨$⟩ (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y) ⟨$⟩ y ≈ ϕ ⟨$⟩ (join ⟨$⟩ hh) ⟨$⟩ y
-      braid : ∀ hh y y' → ϕ ⟨$⟩ (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y') ⟨$⟩ y ≈
-              ϕ ⟨$⟩ (flip ⟨$⟩ (ϕ ∘ₛ (flip ⟨$⟩ hh)) ⟨$⟩ y) ⟨$⟩ y'
+      sec : ∀ h x → fill h ⟨$⟩ (α ⟨$⟩ x) ≈ h ⟨$⟩ x
+      proj : ∀ s y → fill (const ⟨$⟩ s) ⟨$⟩ y ≈ s
+      diag : ∀ hh y → fill (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y) ⟨$⟩ y ≈ fill (join ⟨$⟩ hh) ⟨$⟩ y
+      braid : ∀ hh y y' → fill (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y') ⟨$⟩ y ≈
+              fill (flip ⟨$⟩ (ϕ ∘ₛ (flip ⟨$⟩ hh)) ⟨$⟩ y) ⟨$⟩ y'
 
   _×ᶜ_ : Cplx a r → Cplx a s → Cplx _ _
   A ×ᶜ B = record
@@ -186,9 +186,25 @@ module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
                A.sec (compose ⟨$⟩ fst ⟨$⟩ h) x ,
                B.sec (compose ⟨$⟩ snd ⟨$⟩ h) x
     ; proj = λ s y → A.proj (proj₁ s) y , B.proj (proj₂ s) y
-    ; diag = {!!}
+    ; diag = λ hh y → (AR.begin
+    Func.to
+    (Func.to
+     (Func.to join
+      (Func.to (Func.to flip compose) (B.ϕ ∘ₛ Func.to compose snd) ∘ₛ
+       combine ∘ₛ A.ϕ ∘ₛ Func.to compose fst))
+     (Func.to
+      (Func.to flip
+       (Func.to join
+        (Func.to (Func.to flip compose) (B.ϕ ∘ₛ Func.to compose snd) ∘ₛ
+         combine ∘ₛ A.ϕ ∘ₛ Func.to compose fst)
+        ∘ₛ hh))
+      y))
+    y .proj₁ AR.≡⟨⟩
+    {!!}) , {!!}
     ; braid = {!!}
     }
     where
       module A = Cplx A
       module B = Cplx B
+      module AR = Reasoning A._≈_ A.refl A.trans
+      module BR = Reasoning B._≈_ B.refl B.trans
