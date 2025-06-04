@@ -162,6 +162,8 @@ factorise _ _ = record
 < f ≈ g for h w/ h-eq >⁼ = factorise f g ⟨$⟩ (h , h-eq)
 
 module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
+  module X = Setoid X
+  module Y = Setoid Y
 
   record Cplx a r : Set (suc (a ⊔ r) ⊔ x ⊔ u ⊔ y ⊔ v) where
     field
@@ -169,14 +171,30 @@ module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
       ϕ : (X ⟶ˢ setoid) ⟶ₛ (Y ⟶ˢ setoid)
 
     open Setoid setoid public
-    open Func ϕ renaming (to to fill; cong to fill-cong) public
+
+    fill : (X ⟶ₛ setoid) → Y.Carrier → Carrier
+    fill h y = ϕ ⟨$⟩ h ⟨$⟩ y
+
+    open Func ϕ renaming (cong to fill-cong) public
 
     field
-      sec : ∀ h x → fill h ⟨$⟩ (α ⟨$⟩ x) ≈ h ⟨$⟩ x
-      proj : ∀ s y → fill (const ⟨$⟩ s) ⟨$⟩ y ≈ s
-      diag : ∀ hh y → fill (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y) ⟨$⟩ y ≈ fill (join ⟨$⟩ hh) ⟨$⟩ y
-      braid : ∀ hh y y' → fill (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y') ⟨$⟩ y ≈
-              fill (flip ⟨$⟩ (ϕ ∘ₛ (flip ⟨$⟩ hh)) ⟨$⟩ y) ⟨$⟩ y'
+      sec : ∀ h x → fill h (α ⟨$⟩ x) ≈ h ⟨$⟩ x
+      proj : ∀ s y → fill (const ⟨$⟩ s) y ≈ s
+      diag : ∀ hh y → fill (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y) y ≈ fill (join ⟨$⟩ hh) y
+      braid : ∀ hh y y' → fill (flip ⟨$⟩ ϕ ∘ₛ hh ⟨$⟩ y') y ≈
+              fill (flip ⟨$⟩ (ϕ ∘ₛ (flip ⟨$⟩ hh)) ⟨$⟩ y) y'
+
+  record Coh (A : Cplx a r) (B : Cplx b s) : Set (a ⊔ r ⊔ b ⊔ s ⊔ x ⊔ u ⊔ y) where
+    module A = Cplx A
+    module B = Cplx B
+    
+    field
+      fun : A.setoid ⟶ₛ B.setoid
+
+    open Func fun renaming (to to f; cong to f-cong) public
+
+    field
+      isCoh : ∀ h y → B.fill (fun ∘ₛ h) y B.≈ f (A.fill h y)
 
   _×ᶜ_ : Cplx a r → Cplx a s → Cplx _ _
   A ×ᶜ B = record
