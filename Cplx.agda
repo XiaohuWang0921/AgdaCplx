@@ -186,25 +186,25 @@ module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
                A.sec (compose ⟨$⟩ fst ⟨$⟩ h) x ,
                B.sec (compose ⟨$⟩ snd ⟨$⟩ h) x
     ; proj = λ s y → A.proj (proj₁ s) y , B.proj (proj₂ s) y
-    ; diag = λ hh y → (AR.begin
-    Func.to
-    (Func.to
-     (Func.to join
-      (Func.to (Func.to flip compose) (B.ϕ ∘ₛ Func.to compose snd) ∘ₛ
-       combine ∘ₛ A.ϕ ∘ₛ Func.to compose fst))
-     (Func.to
-      (Func.to flip
-       (Func.to join
-        (Func.to (Func.to flip compose) (B.ϕ ∘ₛ Func.to compose snd) ∘ₛ
-         combine ∘ₛ A.ϕ ∘ₛ Func.to compose fst)
-        ∘ₛ hh))
-      y))
-    y .proj₁ AR.≡⟨⟩
-    {!!}) , {!!}
-    ; braid = {!!}
+    ; diag = λ hh y →
+      A.trans
+        (A.fill-cong (λ _ → A.refl) y)
+        (A.diag ((compose ⟨$⟩ fst) ∘ₛ hh) y) ,
+      B.trans
+        (B.fill-cong (λ _ → B.refl) y)
+        (B.diag ((compose ⟨$⟩ snd) ∘ₛ hh) y)
+    ; braid = λ hh y y' →
+      A.trans
+        (A.trans
+          (A.fill-cong (λ _ → A.refl) y)
+          (A.braid ((compose ⟨$⟩ fst) ∘ₛ hh) y y'))
+        (A.fill-cong (λ _ → A.refl) y') ,
+      B.trans
+        (B.fill-cong (λ _ → B.refl) y)
+        (B.trans
+          (B.braid ((compose ⟨$⟩ snd) ∘ₛ hh) y y')
+          (B.fill-cong (λ _ → B.refl) y'))
     }
     where
       module A = Cplx A
       module B = Cplx B
-      module AR = Reasoning A._≈_ A.refl A.trans
-      module BR = Reasoning B._≈_ B.refl B.trans
