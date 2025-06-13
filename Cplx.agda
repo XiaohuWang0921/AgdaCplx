@@ -33,8 +33,8 @@ module _ where
       }
     }
   
-  compose : (B ⟶ˢ C) ⟶ₛ (A ⟶ˢ B) ⟶ˢ A ⟶ˢ C
-  compose = record
+  compˢ : (B ⟶ˢ C) ⟶ₛ (A ⟶ˢ B) ⟶ˢ A ⟶ˢ C
+  compˢ = record
     { to = λ f → record
       { to = λ g → record
         { to = λ a → f ⟨$⟩ (g ⟨$⟩ a)
@@ -47,7 +47,7 @@ module _ where
   
   infixr 9 _∘ₛ_
   _∘ₛ_ : (B ⟶ₛ C) → (A ⟶ₛ B) → A ⟶ₛ C
-  f ∘ₛ g = compose ⟨$⟩ f ⟨$⟩ g
+  f ∘ₛ g = compˢ ⟨$⟩ f ⟨$⟩ g
   
   flip : (A ⟶ˢ B ⟶ˢ C) ⟶ₛ B ⟶ˢ A ⟶ˢ C
   flip = record
@@ -145,7 +145,7 @@ module _ where
   
   defactorise : (f g : B ⟶ₛ C) →
     (A ⟶ˢ Equaliser f g) ⟶ₛ
-    Equaliser (compose {A = A} ⟨$⟩ f) (compose ⟨$⟩ g)
+    Equaliser (compˢ {A = A} ⟨$⟩ f) (compˢ ⟨$⟩ g)
   defactorise _ _ = record
     { to = λ h → record
       { to = λ a → (h ⟨$⟩ a) .proj₁
@@ -160,9 +160,12 @@ module _ where
   equaliser-eq : (f g : A ⟶ₛ B) → let open Setoid (Equaliser f g ⟶ˢ B) in f ∘ₛ equaliser f g ≈ g ∘ₛ equaliser f g
   equaliser-eq f g = proj₂
 
+  PullBack : (f : A ⟶ₛ C) (g : B ⟶ₛ C) → Setoid _ _
+  PullBack f g = Equaliser (f ∘ₛ fst) (g ∘ₛ snd)
+
   compose-eqlˡ : (f g : C ⟶ₛ D) →
-    Equaliser (compose {A = B} ⟨$⟩ f) (compose ⟨$⟩ g) ⟶ₛ
-    (A ⟶ˢ B) ⟶ˢ Equaliser (compose {A = A} ⟨$⟩ f) (compose ⟨$⟩ g)
+    Equaliser (compˢ {A = B} ⟨$⟩ f) (compˢ ⟨$⟩ g) ⟶ₛ
+    (A ⟶ˢ B) ⟶ˢ Equaliser (compˢ {A = A} ⟨$⟩ f) (compˢ ⟨$⟩ g)
   compose-eqlˡ f g = record
     { to = λ (h , h-eq) → record
       { to = λ j → h ∘ₛ j , λ a → h-eq (j ⟨$⟩ a)
@@ -172,15 +175,38 @@ module _ where
     }
 
   compose-eqlʳ : (f g : B ⟶ₛ C) (h : C ⟶ₛ D) →
-    Equaliser (compose {A = A} ⟨$⟩ f) (compose ⟨$⟩ g) ⟶ₛ
-    Equaliser (compose {A = A} ⟨$⟩ h ∘ₛ f) (compose ⟨$⟩ h ∘ₛ f)
+    Equaliser (compˢ {A = A} ⟨$⟩ f) (compˢ ⟨$⟩ g) ⟶ₛ
+    Equaliser (compˢ {A = A} ⟨$⟩ h ∘ₛ f) (compˢ ⟨$⟩ h ∘ₛ f)
   compose-eqlʳ {D = D} f g h = let open Setoid D in record
     { to = λ (j , j-eq) → j , λ a → refl
     ; cong = λ j≈j' → j≈j'
     }
+
+  equaliser-refl : (f : A ⟶ₛ B) → A ⟶ₛ Equaliser f f
+  equaliser-refl {B = B} _ = let open Setoid B in record
+    { to = λ a → a , refl
+    ; cong = λ a≈a' → a≈a'
+    }
+
+  equaliser-trans : (f g h : A ⟶ₛ B) → PullBack (equaliser f g) (equaliser g h) ⟶ₛ Equaliser f h
+  equaliser-trans {A = A} {B = B} f g h = record
+    { to = λ (((x , eqx) , y , eqy) , eq) → x , (begin
+      f ⟨$⟩ x ∼⟨ eqx ⟩
+      g ⟨$⟩ x ∼⟨ g.cong eq ⟩
+      g ⟨$⟩ y ∼⟨ eqy ⟩
+      h ⟨$⟩ y ∼⟨ h.cong (A.sym eq) ⟩
+      h ⟨$⟩ x ∎)
+    ; cong = proj₁
+    }
+    where
+      module A = Setoid A
+      module B = Setoid B
+      module g = Func g
+      module h = Func h
+      open Reasoning B._≈_ B.refl B.trans
   
   factorise : (f g : B ⟶ₛ C) →
-              Equaliser (compose {A = A} ⟨$⟩ f) (compose ⟨$⟩ g) ⟶ₛ
+              Equaliser (compˢ {A = A} ⟨$⟩ f) (compˢ ⟨$⟩ g) ⟶ₛ
               A ⟶ˢ Equaliser f g
   factorise _ _ = record
     { to = λ (h , h-eq) → record
@@ -218,7 +244,7 @@ module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
               fill (flip ⟨$⟩ (ϕ ∘ₛ (flip ⟨$⟩ hh)) ⟨$⟩ y) y'
 
   Coh : Cplx a r → Cplx b s → Setoid _ _
-  Coh A B = Equaliser ((flip ⟨$⟩ compose ⟨$⟩ A.ϕ) ∘ₛ compose) ((compose ⟨$⟩ B.ϕ) ∘ₛ compose)
+  Coh A B = Equaliser ((flip ⟨$⟩ compˢ ⟨$⟩ A.ϕ) ∘ₛ compˢ) ((compˢ ⟨$⟩ B.ϕ) ∘ₛ compˢ)
     where
       module A = Cplx A
       module B = Cplx B
@@ -228,32 +254,35 @@ module Single (X : Setoid x u) (Y : Setoid y v) (α : X ⟶ₛ Y) where
       A : Cplx a r
       B : Cplx b s
       C : Cplx c t
-
+      
+  compˣ : Coh B C ⟶ₛ Coh A B ⟶ˢ Coh A C
+  compˣ = {!!}
+  
   _×ᶜ_ : Cplx a r → Cplx a s → Cplx _ _
   A ×ᶜ B = record
     { setoid = A.setoid ×ˢ B.setoid
-    ; ϕ = join ⟨$⟩ (flip ⟨$⟩ compose ⟨$⟩ B.ϕ ∘ₛ (compose ⟨$⟩ snd)) ∘ₛ combine ∘ₛ A.ϕ ∘ₛ (compose ⟨$⟩ fst)
+    ; ϕ = join ⟨$⟩ (flip ⟨$⟩ compˢ ⟨$⟩ B.ϕ ∘ₛ (compˢ ⟨$⟩ snd)) ∘ₛ combine ∘ₛ A.ϕ ∘ₛ (compˢ ⟨$⟩ fst)
     ; sec = λ h x →
-               A.sec (compose ⟨$⟩ fst ⟨$⟩ h) x ,
-               B.sec (compose ⟨$⟩ snd ⟨$⟩ h) x
+               A.sec (compˢ ⟨$⟩ fst ⟨$⟩ h) x ,
+               B.sec (compˢ ⟨$⟩ snd ⟨$⟩ h) x
     ; proj = λ s y → A.proj (proj₁ s) y , B.proj (proj₂ s) y
     ; diag = λ hh y →
       A.trans
         (A.fill-cong (λ _ → A.refl) y)
-        (A.diag ((compose ⟨$⟩ fst) ∘ₛ hh) y) ,
+        (A.diag ((compˢ ⟨$⟩ fst) ∘ₛ hh) y) ,
       B.trans
         (B.fill-cong (λ _ → B.refl) y)
-        (B.diag ((compose ⟨$⟩ snd) ∘ₛ hh) y)
+        (B.diag ((compˢ ⟨$⟩ snd) ∘ₛ hh) y)
     ; braid = λ hh y y' →
       A.trans
         (A.trans
           (A.fill-cong (λ _ → A.refl) y)
-          (A.braid ((compose ⟨$⟩ fst) ∘ₛ hh) y y'))
+          (A.braid ((compˢ ⟨$⟩ fst) ∘ₛ hh) y y'))
         (A.fill-cong (λ _ → A.refl) y') ,
       B.trans
         (B.fill-cong (λ _ → B.refl) y)
         (B.trans
-          (B.braid ((compose ⟨$⟩ snd) ∘ₛ hh) y y')
+          (B.braid ((compˢ ⟨$⟩ snd) ∘ₛ hh) y y')
           (B.fill-cong (λ _ → B.refl) y'))
     }
     where
