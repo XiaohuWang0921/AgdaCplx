@@ -10,7 +10,8 @@ open import Function.Base
 open import Data.Unit.Base
 open import Data.Product.Base
 open import Data.Product.Properties
-  
+open ≡-Reasoning
+
 private
   variable
     a b c u v x y : Level
@@ -78,16 +79,19 @@ module Ext (ext : ∀ {a b} → Extensionality a b) where
         }
 
       proj₁-Coh : {{_ : Cplx A}} {{_ : Cplx B}} → Coh {A = A × B} proj₁
+      {-# OVERLAPS proj₁-Coh #-}
       proj₁-Coh = record
         { coh = refl
         }
 
       proj₂-Coh : {{_ : Cplx A}} {{_ : Cplx B}} → Coh {A = A × B} proj₂
+      {-# OVERLAPS proj₂-Coh #-}
       proj₂-Coh = record
         { coh = refl
         }
 
       <,>-Coh : {f : A → B} {g : A → C} {{_ : Cplx A}} {{_ : Cplx B}} {{_ : Cplx C}} → {{Coh f}} → {{Coh g}} → Coh < f , g >
+      {-# OVERLAPS <,>-Coh #-}
       <,>-Coh = record
         { coh = ×-≡,≡→≡ (coh , coh)
         }
@@ -102,6 +106,31 @@ module Ext (ext : ∀ {a b} → Extensionality a b) where
         }
 
       id-Coh : {{_ : Cplx A}} → Coh {A = A} id
+      {-# OVERLAPPING id-Coh #-}
       id-Coh = record
+        { coh = refl
+        }
+
+      ∘-Coh : {f : B → C} {g : A → B} {{_ : Cplx A}} {{_ : Cplx B}} {{_ : Cplx C}} → {{Coh f}} → {{Coh g}} → Coh (f ∘ g)
+      {-# OVERLAPPABLE ∘-Coh #-}
+      ∘-Coh {f = f} = record
+        { coh = trans coh (cong f coh)
+        }
+
+      ∀∘-Coh : {f : B → C} {{_ : Cplx B}} {{_ : Cplx C}} → {{Coh f}} → Coh {A = A → B} (f ∘_)
+      {-# OVERLAPS ∀∘-Coh #-}
+      ∀∘-Coh = record
+        { coh = ext (λ _ → coh)
+        }
+
+      ∀flip∘-Coh : {f : A → B} {{_ : Cplx C}} → Coh (flip (_∘′_ {C = C}) f)
+      {-# OVERLAPS ∀flip∘-Coh #-}
+      ∀flip∘-Coh = record
+        { coh = refl
+        }
+
+      ∀∀∘-Coh : {{_ : Cplx C}} → Coh (_∘′_ {B = B} {C = C} {A = A})
+      {-# OVERLAPS ∀∀∘-Coh #-}
+      ∀∀∘-Coh = record
         { coh = refl
         }
