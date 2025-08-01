@@ -26,12 +26,18 @@ join f = λ x → f x x
 {-# NOINLINE flip #-}
 {-# NOINLINE _∘_ #-}
 {-# NOINLINE join #-}
+{-# NOINLINE <_,_> #-}
 
 record Equaliser {A : Set a} {B : A → Set b} (f g : ∀ x → B x) : Set (a ⊔ b) where
   constructor eql
   field
     val : A
     .eq : f val ≡ g val
+
+open Equaliser public
+
+factor : {f g : B → C} → Equaliser {A = A → B} (f ∘_) (g ∘_) → A → Equaliser f g
+factor (eql h f∘h≡g∘h) x = eql (h x) (cong (_$ x) f∘h≡g∘h)
 
 module Ext (ext : ∀ {a b} → Extensionality a b) where
 
@@ -44,13 +50,13 @@ module Ext (ext : ∀ {a b} → Extensionality a b) where
         diag : ∀ {hh y} → ϕ (λ x → ϕ (hh x) y) y ≡ ϕ (join hh) y
         braid : ∀ {hh y y'} → ϕ (λ x → ϕ (hh x) y') y ≡ ϕ (λ x → ϕ (flip hh x) y) y'
 
-    open Cplx {{...}}
+    open Cplx {{...}} public
 
     record Coh {A : Set a} {B : Set b} {{_ : Cplx A}} {{_ : Cplx B}} (f : A → B) : Set (a ⊔ b ⊔ x ⊔ y) where
       field
-        prf : ∀ {h y} → ϕ (f ∘ h) y ≡ f (ϕ h y)
+        coh : ∀ {h y} → ϕ (f ∘ h) y ≡ f (ϕ h y)
 
-    open Coh {{...}}
+    open Coh {{...}} public
 
     instance
       ⊤-Cplx : Cplx ⊤
@@ -73,12 +79,17 @@ module Ext (ext : ∀ {a b} → Extensionality a b) where
 
       proj₁-Coh : {{_ : Cplx A}} {{_ : Cplx B}} → Coh {A = A × B} proj₁
       proj₁-Coh = record
-        { prf = refl
+        { coh = refl
         }
 
       proj₂-Coh : {{_ : Cplx A}} {{_ : Cplx B}} → Coh {A = A × B} proj₂
       proj₂-Coh = record
-        { prf = refl
+        { coh = refl
+        }
+
+      <,>-Coh : {f : A → B} {g : A → C} {{_ : Cplx A}} {{_ : Cplx B}} {{_ : Cplx C}} → {{Coh f}} → {{Coh g}} → Coh < f , g >
+      <,>-Coh = record
+        { coh = ×-≡,≡→≡ (coh , coh)
         }
 
       →-Cplx : {{Cplx B}} → Cplx (A → B)
@@ -92,5 +103,5 @@ module Ext (ext : ∀ {a b} → Extensionality a b) where
 
       id-Coh : {{_ : Cplx A}} → Coh {A = A} id
       id-Coh = record
-        { prf = refl
+        { coh = refl
         }
